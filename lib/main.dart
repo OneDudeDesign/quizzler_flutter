@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:quizzler_flutter/quiz_brain.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
+
+QuizBrain quizBrain = QuizBrain();
 
 void main() => runApp(Quizzler());
 
@@ -25,21 +29,82 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
+  List<Icon> scoreKeeper = [];
+  Icon correct = const Icon(
+    Icons.check,
+    color: Colors.green,
+  );
+  Icon incorrect = const Icon(
+    Icons.close,
+    color: Colors.red,
+  );
+  Null iconToAdd;
+
+  void checkAnswer(bool userPickedAnswer) {
+    bool correctAnswer = quizBrain.getQuestionAnswer();
+
+    setState(() {
+      if (quizBrain.isFinished()) {
+        //show an alert
+        Alert(
+          context: context,
+          type: AlertType.success,
+          title: "End Of the Quiz",
+          desc: "Cancel or reset the quiz to the start",
+          buttons: [
+            DialogButton(
+              onPressed: () => Navigator.pop(context),
+              color: Colors.red,
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+            DialogButton(
+              onPressed: () {
+                setState(() {
+                  //reset
+                  quizBrain.reset();
+                  //empty score
+                  scoreKeeper = [];
+                });
+
+                Navigator.of(context).pop();
+              },
+              color: Colors.green,
+              child: const Text(
+                "Reset",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+          ],
+        ).show();
+      } else {
+        if (userPickedAnswer == correctAnswer) {
+          scoreKeeper.add(correct);
+        } else {
+          scoreKeeper.add(incorrect);
+        }
+        quizBrain.nextQuestion();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const Expanded(
+        Expanded(
           flex: 5,
           child: Padding(
             padding: EdgeInsets.all(10.0),
             child: Center(
               child: Text(
-                'This is where the question text will go.',
+                quizBrain.getQuestionText(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 25.0,
                   color: Colors.white,
                 ),
@@ -62,7 +127,8 @@ class _QuizPageState extends State<QuizPage> {
                 ),
               ),
               onPressed: () {
-                //The user picked true.
+                //the user picked true
+                checkAnswer(true);
               },
             ),
           ),
@@ -81,10 +147,14 @@ class _QuizPageState extends State<QuizPage> {
               ),
               onPressed: () {
                 //The user picked false.
+                checkAnswer(false);
               },
             ),
           ),
         ),
+        Row(
+          children: scoreKeeper,
+        )
       ],
     );
   }
